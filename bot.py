@@ -1,6 +1,7 @@
 import os
 import logging
 import subprocess
+from functools import wraps
 from datetime import datetime
 import google.generativeai as genai
 from dotenv import load_dotenv
@@ -22,6 +23,17 @@ logger = logging.getLogger(__name__)
 
 def log_action(action_type, details):
     logger.info(f"[{action_type.upper()}] {details}")
+
+def authorized_only(func):
+    """Decorator to restrict access to the authorized user."""
+    @wraps(func)
+    async def wrapped(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
+        user_id = update.effective_user.id if update.effective_user else None
+        if user_id != AUTHORIZED_USER_ID:
+            log_action("UNAUTHORIZED_ACCESS", f"User {user_id} tried to access {func.__name__}")
+            return
+        return await func(update, context, *args, **kwargs)
+    return wrapped
 
 # 2. Gemini Setup
 genai.configure(api_key=GEMINI_API_KEY)
@@ -71,17 +83,18 @@ model = genai.GenerativeModel(model_name=current_model_code, tools=tools_list)
 chat_session = model.start_chat(enable_automatic_function_calling=True)
 
 # 4. Telegram Handler
+@authorized_only
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != AUTHORIZED_USER_ID: return
     await update.message.reply_text("🚀 Gemini Code Bot online. Sende mir eine Nachricht oder nutze /settings.")
 
+@authorized_only
 async def settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton(name, callback_data=f"set_model|{code}")] for name, code in AVAILABLE_MODELS.items()]
     await update.message.reply_text(f"Aktuelles Modell: `{current_model_code}`\nWähle ein Modell:", 
                                   reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
 
+@authorized_only
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != AUTHORIZED_USER_ID: return
     log_action("USER_MSG", update.message.text[:50])
     
     try:
@@ -101,6 +114,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"Fehler: {str(e)}")
 
+@authorized_only
 async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global chat_session, current_model_code
     query = update.callback_query
