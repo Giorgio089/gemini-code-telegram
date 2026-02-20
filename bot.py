@@ -85,7 +85,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     log_action("USER_MSG", update.message.text[:50])
     
     try:
-        response = chat_session.send_message(update.message.text)
+        response = await chat_session.send_message_async(update.message.text)
         usage = response.usage_metadata
         stats = f"\n\n📊 `In: {usage.prompt_token_count} | Out: {usage.candidates_token_count} | Total: {usage.total_token_count}`"
 
