@@ -21,7 +21,7 @@ Installation
 Clone the Repository:
 
 Bash
-git clone https://github.com/YOUR-USERNAME/gemini-code-bot.git
+git clone https://github.com/Giorgio089/gemini-code-bot.git
 cd gemini-code-bot
 Install Dependencies:
 
