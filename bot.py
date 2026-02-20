@@ -82,7 +82,7 @@ async def settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != AUTHORIZED_USER_ID: return
-    log_action("USER_MSG", update.message.text[:50])
+    log_action("USER_MSG", f"Received message of length {len(update.message.text)}")
     
     try:
         response = await chat_session.send_message_async(update.message.text)
